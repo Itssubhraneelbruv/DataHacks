@@ -17,7 +17,7 @@ st.set_page_config(page_title="Heat Trace", layout="wide")
 
 st.title("Heat Trace")
 st.caption(
-    "A hackathon data app for exploring how U.S. energy activity, solar adoption, "
+    "A hackathon-ready data app for exploring how U.S. energy activity, solar adoption, "
     "and environmental indicators move together across states."
 )
 
@@ -39,7 +39,7 @@ st.caption(metric_help(metric))
 st.plotly_chart(choropleth_map(latest, metric), use_container_width=True)
 
 st.subheader(f"Top and bottom states by {METRIC_LABELS[metric].lower()}")
-ranked = ranked_states(latest, metric)
+ranked = ranked_states(latest, metric, n=5)
 display_col = METRIC_LABELS[metric]
 formatter = {display_col: "{:.1%}"} if metric == "solar_growth_rate" else {display_col: "{:,.3f}"}
 if metric not in {"clean_ratio", "emissions_intensity", "solar_growth_rate"}:

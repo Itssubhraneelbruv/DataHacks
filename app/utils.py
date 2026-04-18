@@ -134,12 +134,73 @@ def choropleth_map(latest: pd.DataFrame, metric: str) -> go.Figure:
         color_continuous_scale=color_scale,
         labels={metric: METRIC_LABELS.get(metric, metric)},
     )
+    globe_shapes = globe_backdrop_shapes()
     fig.update_layout(
         margin=dict(l=0, r=0, t=10, b=0),
-        height=480,
+        height=510,
+        paper_bgcolor="#f4f8fb",
+        plot_bgcolor="#f4f8fb",
+        shapes=globe_shapes,
         coloraxis_colorbar_title=METRIC_LABELS.get(metric, metric),
     )
+    fig.update_geos(
+        bgcolor="rgba(0,0,0,0)",
+        lakecolor="rgba(255,255,255,0.7)",
+        landcolor="rgba(248,250,252,0.88)",
+        subunitcolor="rgba(71,85,105,0.55)",
+        countrycolor="rgba(71,85,105,0.45)",
+    )
     return fig
+
+
+def globe_backdrop_shapes() -> list[dict[str, object]]:
+    """Build a light globe-style wireframe behind the U.S. choropleth."""
+    shapes: list[dict[str, object]] = [
+        {
+            "type": "circle",
+            "xref": "paper",
+            "yref": "paper",
+            "x0": 0.08,
+            "y0": 0.02,
+            "x1": 0.92,
+            "y1": 0.98,
+            "line": {"color": "rgba(37, 99, 235, 0.20)", "width": 2},
+            "fillcolor": "rgba(219, 234, 254, 0.26)",
+            "layer": "below",
+        }
+    ]
+
+    for x in [0.22, 0.34, 0.46, 0.54, 0.66, 0.78]:
+        shapes.append(
+            {
+                "type": "line",
+                "xref": "paper",
+                "yref": "paper",
+                "x0": x,
+                "y0": 0.06,
+                "x1": x,
+                "y1": 0.94,
+                "line": {"color": "rgba(37, 99, 235, 0.11)", "width": 1},
+                "layer": "below",
+            }
+        )
+
+    for y in [0.18, 0.32, 0.50, 0.68, 0.82]:
+        shapes.append(
+            {
+                "type": "line",
+                "xref": "paper",
+                "yref": "paper",
+                "x0": 0.12,
+                "y0": y,
+                "x1": 0.88,
+                "y1": y,
+                "line": {"color": "rgba(37, 99, 235, 0.11)", "width": 1},
+                "layer": "below",
+            }
+        )
+
+    return shapes
 
 
 def ranked_states(latest: pd.DataFrame, metric: str, n: int = 10) -> pd.DataFrame:
