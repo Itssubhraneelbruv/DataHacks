@@ -143,8 +143,8 @@ def choropleth_map(latest: pd.DataFrame, metric: str) -> go.Figure:
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#31333f"),
         coloraxis_colorbar=dict(
-            title=dict(text=METRIC_LABELS.get(metric, metric), font=dict(color="#31333f")),
-            tickfont=dict(color="#31333f"),
+            title=dict(text=METRIC_LABELS.get(metric, metric), font=dict(color="#ffffff")),
+            tickfont=dict(color="#ffffff"),
         ),
     )
     fig.update_geos(
