@@ -1,8 +1,8 @@
 # Heat Trace
 
-Heat Trace is a runnable Streamlit prototype for exploring relationships between U.S. energy activity, solar adoption, and environmental indicators across states.
+Heat Trace is a Streamlit prototype for exploring relationships between U.S. energy activity, solar adoption, and environmental indicators across states.
 
-The first pass uses generated state-level mock data so the app works immediately. The processed data schema is intentionally simple so real EIA, ZenPower, and EPA ingestion can replace the mock data later.
+The first pass uses generated state-level mock data. The processed data schema is intentionally simple so real EIA, ZenPower, and EPA ingestion can replace the mock data later.
 
 ## Folder structure
 
