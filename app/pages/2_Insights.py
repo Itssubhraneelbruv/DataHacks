@@ -17,7 +17,7 @@ st.caption("Solar permit patterns reveal two very different adoption stories.")
 
 combined_chart_path = APP_DIR / "assets" / "solar_permit_individual_analysis.png"
 permit_count_chart_path = APP_DIR / "assets" / "top_cities_by_permit_count.png"
-avg_system_chart_path = APP_DIR / "assets" / "top_cities_by_avg_kwh_per_permit.png"
+avg_system_chart_path = APP_DIR / "assets" / "top_cities_by_avg_system_size_per_permit.png"
 adoption_time_chart_path = APP_DIR / "assets" / "solar_permit_adoption_over_time.png"
 
 st.image(combined_chart_path, use_container_width=True)
@@ -59,19 +59,25 @@ st.write(
 st.subheader("Where system size tells a different story")
 st.image(avg_system_chart_path, use_container_width=True)
 st.write(
-    "Average system size points to a separate type of solar buyer. Cities like Point Reyes "
-    "and Detour have enormous average systems, with Point Reyes reaching 741 kWh per permit "
-    "and Detour reaching 630 kWh. Those numbers are far beyond a typical single-family rooftop "
-    "setup, which suggests farms, ranches, or commercial properties with much larger energy needs."
+    "A typical home solar system is around 8-12 kW, but every city on this chart averages "
+    "300-741 kW per permit. That means these are not normal homeowner installs. They are more "
+    "likely farms, ranches, commercial properties, or small utility-scale projects, which means "
+    "this slice of the records data is capturing a completely different buyer profile than the "
+    "one we assumed at first."
+)
+st.write(
+    "Point Reyes is the clearest example. It is a rural coastal community in Marin County with "
+    "farms and nature preserves, and its 741 kW average system size is likely agricultural or "
+    "large-property solar. The same pattern shows up across the list: Paicines, Lebec, Terra Bella, "
+    "Aromas, and San Juan Bautista are small rural places rather than urban centers."
 )
 
 st.subheader("What this means")
 st.write(
-    "These charts point to two different solar markets. One is the everyday homeowner market, "
-    "where thousands of people in places like Oakland and San Diego install modest rooftop systems. "
-    "The other is the big-installer market, where a smaller number of rural or commercial buyers "
-    "install very large systems. That distinction matters for modeling: sun exposure alone may not "
-    "predict adoption as well as the mix of household demand, property type, incentives, and local economics."
+    "This changes the interpretation of solar adoption. The permit count chart shows urban homeowners "
+    "buying small systems by the thousands, while the system-size chart shows rural landowners buying "
+    "massive systems one at a time. Both count as solar adoption, but economically, environmentally, "
+    "and behaviorally, they are almost completely different markets."
 )
 
 st.divider()
