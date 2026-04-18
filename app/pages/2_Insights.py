@@ -20,14 +20,19 @@ permit_count_chart_path = APP_DIR / "assets" / "top_cities_by_permit_count.png"
 avg_system_chart_path = APP_DIR / "assets" / "top_cities_by_avg_system_size_per_permit.png"
 adoption_time_chart_path = APP_DIR / "assets" / "solar_permit_adoption_over_time.png"
 
+st.subheader("Two types of solar buyers, side by side")
+st.write(
+    "The charts below compare cities by permit volume (left) and average system size (right). "
+    "The contrast tells two completely different stories about who is actually going solar."
+)
 st.image(combined_chart_path, use_container_width=True)
 
 st.subheader("Tiny towns, huge systems. Big cities, everyday rooftops.")
 st.write(
-    "The cities with the highest average system size, such as Point Reyes at 741 kWh "
-    "and Detour at 630 kWh, are tiny towns most people have not heard of. The cities "
+    "The cities with the highest average system size, such as Point Reyes at 741 kW "
+    "and Detour at 630 kW, are tiny towns most people have not heard of. The cities "
     "with the most permits, such as Oakland with 3,455 permits and Hanford with 1,776, "
-    "have much smaller average systems around 7-10 kWh."
+    "have much smaller average systems around 7-10 kW."
 )
 
 st.subheader("What this means for regular people")
@@ -40,8 +45,8 @@ st.write(
 
 st.write("So there are actually two completely different types of solar buyers in this data:")
 st.markdown(
-    "- **The big installer:** one farm in Point Reyes putting in a 741 kWh system.\n"
-    "- **The everyday homeowner:** thousands of Oakland residents each putting in a 7-10 kWh rooftop panel."
+    "- **The big installer:** one farm in Point Reyes putting in a 741 kW system.\n"
+    "- **The everyday homeowner:** thousands of Oakland residents each putting in a 7-10 kW rooftop panel."
 )
 
 st.divider()
@@ -59,7 +64,7 @@ st.write(
 st.subheader("Where system size tells a different story")
 st.image(avg_system_chart_path, use_container_width=True)
 st.write(
-    "A typical home solar system is around 8-12 kW, but every city on this chart averages "
+    "A typical home solar system is around 8-12 kW of capacity, but every city on this chart averages "
     "300-741 kW per permit. That means these are not normal homeowner installs. They are more "
     "likely farms, ranches, commercial properties, or small utility-scale projects, which means "
     "this slice of the records data is capturing a completely different buyer profile than the "
