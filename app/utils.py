@@ -4,74 +4,107 @@ import sys
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = PROJECT_ROOT / "data" / "processed" / "heat_trace_state_timeseries.parquet"
+DATA_PATH = PROJECT_ROOT / "data" / "processed" / "clean_energy_data.csv"
+BTU_PER_KWH = 3412.142
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 
 METRIC_LABELS = {
-    "energy_consumption": "Energy consumption",
-    "energy_production": "Energy production",
-    "solar_capacity_added": "Solar capacity added",
-    "co2_emissions": "CO2 emissions",
-    "air_quality_index": "Air quality index",
-    "clean_ratio": "Clean ratio",
-    "emissions_intensity": "Emissions intensity",
-    "solar_growth_rate": "Solar growth rate",
+    "energy_btu": "Energy consumption (BTU)",
+    "energy_kwh": "Energy consumption (kWh)",
+    "year_over_year_change": "Year-over-year change",
 }
 
-CHART_METRICS = [
-    "energy_consumption",
-    "energy_production",
-    "solar_capacity_added",
-    "co2_emissions",
-    "air_quality_index",
-]
+CHART_METRICS = ["energy_btu", "energy_kwh", "year_over_year_change"]
+
+STATE_NAME_BY_ABBR = {
+    "AK": "Alaska",
+    "AL": "Alabama",
+    "AR": "Arkansas",
+    "AZ": "Arizona",
+    "CA": "California",
+    "CO": "Colorado",
+    "CT": "Connecticut",
+    "DC": "District of Columbia",
+    "DE": "Delaware",
+    "FL": "Florida",
+    "GA": "Georgia",
+    "HI": "Hawaii",
+    "IA": "Iowa",
+    "ID": "Idaho",
+    "IL": "Illinois",
+    "IN": "Indiana",
+    "KS": "Kansas",
+    "KY": "Kentucky",
+    "LA": "Louisiana",
+    "MA": "Massachusetts",
+    "MD": "Maryland",
+    "ME": "Maine",
+    "MI": "Michigan",
+    "MN": "Minnesota",
+    "MO": "Missouri",
+    "MS": "Mississippi",
+    "MT": "Montana",
+    "NC": "North Carolina",
+    "ND": "North Dakota",
+    "NE": "Nebraska",
+    "NH": "New Hampshire",
+    "NJ": "New Jersey",
+    "NM": "New Mexico",
+    "NV": "Nevada",
+    "NY": "New York",
+    "OH": "Ohio",
+    "OK": "Oklahoma",
+    "OR": "Oregon",
+    "PA": "Pennsylvania",
+    "RI": "Rhode Island",
+    "SC": "South Carolina",
+    "SD": "South Dakota",
+    "TN": "Tennessee",
+    "TX": "Texas",
+    "US": "United States",
+    "UT": "Utah",
+    "VA": "Virginia",
+    "VT": "Vermont",
+    "WA": "Washington",
+    "WI": "Wisconsin",
+    "WV": "West Virginia",
+    "WY": "Wyoming",
+}
 
 
-def ensure_mock_data() -> Path:
-    """Create the processed parquet file if the repo was freshly cloned."""
-    if DATA_PATH.exists():
-        return DATA_PATH
-
-    from scripts.build_mock_data import save_mock_dataset
-
-    return save_mock_dataset(DATA_PATH)
+def ensure_energy_data() -> Path:
+    if not DATA_PATH.exists():
+        raise FileNotFoundError(f"Expected energy dataset at {DATA_PATH}")
+    return DATA_PATH
 
 
 def load_state_timeseries() -> pd.DataFrame:
-    ensure_mock_data()
-    df = pd.read_parquet(DATA_PATH)
+    ensure_energy_data()
+    df = pd.read_csv(DATA_PATH)
+    df = df.rename(columns={"state": "state_abbr"})
+    df = df[df["state_abbr"] != "US"].copy()
+    df["state"] = df["state_abbr"].map(STATE_NAME_BY_ABBR).fillna(df["state_abbr"])
+    df["date"] = pd.to_datetime(df["year"].astype(int).astype(str) + "-01-01")
+    df["energy_btu"] = pd.to_numeric(df["energy_btu"], errors="coerce")
+    df = df.dropna(subset=["energy_btu", "year"]).copy()
     df["date"] = pd.to_datetime(df["date"])
     return compute_metrics(df)
 
 
 def compute_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute derived metrics so real ingestion can feed the same app contract."""
     df = df.copy().sort_values(["state", "date"])
-
-    df["clean_ratio"] = safe_divide(df["solar_capacity_added"], df["energy_production"])
-    df["emissions_intensity"] = safe_divide(df["co2_emissions"], df["energy_consumption"])
-    df["solar_growth_rate"] = (
-        df.groupby("state")["solar_capacity_added"].pct_change().replace([np.inf, -np.inf], np.nan).fillna(0)
-    )
-    co2_change = df.groupby("state")["co2_emissions"].pct_change().replace([np.inf, -np.inf], np.nan).fillna(0)
-    df["impact_gap_flag"] = (df["solar_growth_rate"] > 0.05) & (co2_change >= -0.005)
-
+    df["energy_kwh"] = df["energy_btu"] / BTU_PER_KWH
+    df["year_over_year_change"] = df.groupby("state")["energy_btu"].pct_change().fillna(0)
     return df
-
-
-def safe_divide(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
-    result = numerator / denominator.replace(0, np.nan)
-    return result.replace([np.inf, -np.inf], np.nan).fillna(0)
 
 
 def latest_snapshot(df: pd.DataFrame) -> pd.DataFrame:
@@ -80,25 +113,16 @@ def latest_snapshot(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def format_metric(value: float, metric: str) -> str:
-    if metric in {"clean_ratio", "emissions_intensity"}:
-        return f"{value:.3f}"
-    if metric == "solar_growth_rate":
+    if metric == "year_over_year_change":
         return f"{value:.1%}"
-    if metric == "air_quality_index":
-        return f"{value:.0f}"
     return f"{value:,.0f}"
 
 
 def metric_help(metric: str) -> str:
     descriptions = {
-        "energy_consumption": "Mock annual state energy demand index.",
-        "energy_production": "Mock annual state energy supply index.",
-        "solar_capacity_added": "Mock annual solar capacity additions.",
-        "co2_emissions": "Mock annual CO2 emissions index.",
-        "air_quality_index": "Mock annual average AQI; lower is better.",
-        "clean_ratio": "Solar capacity added divided by energy production.",
-        "emissions_intensity": "CO2 emissions divided by energy consumption.",
-        "solar_growth_rate": "Year-over-year change in solar capacity added.",
+        "energy_btu": "Annual state energy consumption from the clean dataset, measured in BTUs.",
+        "energy_kwh": "Annual state energy consumption converted from BTUs into kilowatt-hours.",
+        "year_over_year_change": "Percent change in annual state energy consumption versus the prior year.",
     }
     return descriptions.get(metric, "")
 
@@ -106,20 +130,20 @@ def metric_help(metric: str) -> str:
 def render_metric_cards(latest: pd.DataFrame) -> None:
     import streamlit as st
 
-    total_consumption = latest["energy_consumption"].sum()
-    total_production = latest["energy_production"].sum()
-    total_solar = latest["solar_capacity_added"].sum()
-    avg_aqi = latest["air_quality_index"].mean()
+    total_energy = latest["energy_btu"].sum()
+    avg_energy = latest["energy_btu"].mean()
+    top_state = latest.nlargest(1, "energy_btu").iloc[0]
+    median_yoy = latest["year_over_year_change"].median()
 
     cols = st.columns(4)
-    cols[0].metric("Energy consumed", f"{total_consumption:,.0f}")
-    cols[1].metric("Energy produced", f"{total_production:,.0f}")
-    cols[2].metric("Solar added", f"{total_solar:,.0f}")
-    cols[3].metric("Avg AQI", f"{avg_aqi:.0f}")
+    cols[0].metric("Total energy", f"{total_energy:,.0f}")
+    cols[1].metric("Average by state", f"{avg_energy:,.0f}")
+    cols[2].metric("Highest state", top_state["state"])
+    cols[3].metric("Median YoY change", f"{median_yoy:.1%}")
 
 
 def choropleth_map(latest: pd.DataFrame, metric: str) -> go.Figure:
-    color_scale = "RdYlGn_r" if metric in {"co2_emissions", "air_quality_index", "emissions_intensity"} else "Viridis"
+    color_scale = "RdYlGn" if metric == "year_over_year_change" else "Viridis"
     fig = px.choropleth(
         latest,
         locations="state_abbr",
@@ -129,7 +153,7 @@ def choropleth_map(latest: pd.DataFrame, metric: str) -> go.Figure:
         hover_name="state",
         hover_data={
             "state_abbr": False,
-            metric: ":,.3f" if metric in {"clean_ratio", "emissions_intensity", "solar_growth_rate"} else ":,.0f",
+            metric: ":.1%" if metric == "year_over_year_change" else ":,.0f",
         },
         color_continuous_scale=color_scale,
         labels={metric: METRIC_LABELS.get(metric, metric)},
@@ -193,25 +217,17 @@ def state_summary(state_df: pd.DataFrame) -> str:
     state = state_df["state"].iloc[0]
     first = state_df.iloc[0]
     latest = state_df.iloc[-1]
-
-    solar_change = pct_change(first["solar_capacity_added"], latest["solar_capacity_added"])
-    emissions_change = pct_change(first["co2_emissions"], latest["co2_emissions"])
-    aqi_change = latest["air_quality_index"] - first["air_quality_index"]
-    clean_ratio = latest["clean_ratio"]
-
-    emissions_phrase = "fell" if emissions_change < -0.02 else "rose" if emissions_change > 0.02 else "stayed roughly flat"
-    aqi_phrase = "improved" if aqi_change < -2 else "worsened" if aqi_change > 2 else "held steady"
-
-    flag_sentence = (
-        "The state is currently flagged for an impact gap because solar is growing while emissions are not clearly improving."
-        if bool(latest["impact_gap_flag"])
-        else "The latest year does not show an impact-gap flag."
+    energy_change = pct_change(first["energy_btu"], latest["energy_btu"])
+    avg_growth = state_df["year_over_year_change"].iloc[1:].mean() if len(state_df) > 1 else 0.0
+    peak_year = int(state_df.loc[state_df["energy_btu"].idxmax(), "year"])
+    latest_rank = int(
+        state_df[state_df["year"] == latest["year"]]["energy_btu"].rank(method="dense", ascending=False).iloc[0]
     )
 
     return (
-        f"{state} added {solar_change:.0%} more solar capacity than in {int(first['year'])}. "
-        f"Over the same period, CO2 emissions {emissions_phrase} by {abs(emissions_change):.0%}, "
-        f"and air quality {aqi_phrase}. The latest clean ratio is {clean_ratio:.3f}. {flag_sentence}"
+        f"{state} used {energy_change:.0%} more energy in {int(latest['year'])} than in {int(first['year'])}. "
+        f"Its average year-over-year change across the series is {avg_growth:.1%}, and its peak energy use "
+        f"occurred in {peak_year} at about {state_df['energy_kwh'].max():,.0f} kWh."
     )
 
 
@@ -220,43 +236,35 @@ def pct_change(old: float, new: float) -> float:
         return 0.0
     return (new - old) / old
 
-
 def build_insights(df: pd.DataFrame) -> pd.DataFrame:
     latest = latest_snapshot(df)
+    national_median = latest["energy_btu"].median()
     records = []
-    clean_high = latest["clean_ratio"].quantile(0.75)
-    clean_low = latest["clean_ratio"].quantile(0.25)
-    pollution_high = latest["air_quality_index"].quantile(0.75)
 
     for state, state_df in df.groupby("state", sort=True):
         state_df = state_df.sort_values("year")
         latest_row = state_df.iloc[-1]
-        window = state_df.tail(5)
-        solar_change = pct_change(window.iloc[0]["solar_capacity_added"], window.iloc[-1]["solar_capacity_added"])
-        emissions_change = pct_change(window.iloc[0]["co2_emissions"], window.iloc[-1]["co2_emissions"])
-        aqi_change = window.iloc[-1]["air_quality_index"] - window.iloc[0]["air_quality_index"]
+        recent_window = state_df.tail(min(5, len(state_df)))
+        energy_change = pct_change(recent_window.iloc[0]["energy_btu"], recent_window.iloc[-1]["energy_btu"])
 
-        state_flags = []
-        if solar_change > 0.25 and emissions_change >= -0.02:
-            state_flags.append("Solar growth increased but emissions did not decrease")
-        if latest_row["air_quality_index"] >= pollution_high and latest_row["clean_ratio"] <= clean_low:
-            state_flags.append("High pollution and low solar adoption")
-        if latest_row["clean_ratio"] >= clean_high and emissions_change < -0.04 and aqi_change < -3:
-            state_flags.append("Strong solar adoption and improving environmental indicators")
-        if bool(latest_row["impact_gap_flag"]) and "Solar growth increased but emissions did not decrease" not in state_flags:
-            state_flags.append("Latest-year impact gap")
-
-        for flag in state_flags:
+        if energy_change > 0.15:
             records.append(
                 {
                     "State": state,
                     "Abbr": latest_row["state_abbr"],
-                    "Insight": flag,
-                    "Solar growth, 5yr": solar_change,
-                    "CO2 change, 5yr": emissions_change,
-                    "AQI change, 5yr": aqi_change,
-                    "Clean ratio": latest_row["clean_ratio"],
-                    "Latest AQI": latest_row["air_quality_index"],
+                    "Insight": "Fast recent energy growth",
+                    "Energy change, recent": energy_change,
+                    "Latest energy": latest_row["energy_btu"],
+                }
+            )
+        if latest_row["energy_btu"] > national_median * 2:
+            records.append(
+                {
+                    "State": state,
+                    "Abbr": latest_row["state_abbr"],
+                    "Insight": "Very high current energy use",
+                    "Energy change, recent": energy_change,
+                    "Latest energy": latest_row["energy_btu"],
                 }
             )
 
@@ -283,9 +291,7 @@ def dataframe_with_formats(df: pd.DataFrame, percent_columns: Iterable[str] = ()
         if col in df.columns:
             styled = styled.format({col: "{:.1%}"})
     numeric_formats = {
-        "AQI change, 5yr": "{:+.1f}",
-        "Clean ratio": "{:.3f}",
-        "Latest AQI": "{:.0f}",
+        "Latest energy": "{:,.0f}",
     }
     existing = {key: value for key, value in numeric_formats.items() if key in df.columns}
     if existing:

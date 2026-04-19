@@ -15,7 +15,7 @@ from utils import CHART_METRICS, METRIC_LABELS, load_state_timeseries, state_sum
 st.set_page_config(page_title="Heat Trace | State Explorer", layout="wide")
 
 st.title("State Explorer")
-st.caption("Compare energy, solar, emissions, and air-quality trends for a selected state.")
+st.caption("Explore annual state energy consumption and year-over-year change from the clean dataset.")
 
 df = load_state_timeseries()
 states = df["state"].drop_duplicates().sort_values().tolist()
@@ -30,11 +30,13 @@ with selector_col:
 state_df = df[df["state"] == selected_state].sort_values("date")
 
 latest = state_df.iloc[-1]
+first = state_df.iloc[0]
+peak = state_df.loc[state_df["energy_btu"].idxmax()]
 cols = st.columns(4)
-cols[0].metric("Latest solar added", f"{latest['solar_capacity_added']:,.0f}")
-cols[1].metric("Latest CO2", f"{latest['co2_emissions']:,.0f}")
-cols[2].metric("Latest AQI", f"{latest['air_quality_index']:.0f}")
-cols[3].metric("Clean ratio", f"{latest['clean_ratio']:.3f}")
+cols[0].metric("Latest energy", f"{latest['energy_btu']:,.0f}")
+cols[1].metric("Latest energy (kWh)", f"{latest['energy_kwh']:,.0f}")
+cols[2].metric("Peak year", f"{int(peak['year'])}")
+cols[3].metric("Latest YoY change", f"{latest['year_over_year_change']:.1%}")
 
 st.subheader(selected_state)
 st.write(state_summary(state_df))
@@ -47,29 +49,11 @@ for tab, metric in zip(tabs, CHART_METRICS):
 
 with st.expander("State data"):
     st.dataframe(
-        state_df[
-            [
-                "year",
-                "energy_consumption",
-                "energy_production",
-                "solar_capacity_added",
-                "co2_emissions",
-                "air_quality_index",
-                "clean_ratio",
-                "emissions_intensity",
-                "solar_growth_rate",
-                "impact_gap_flag",
-            ]
-        ].style.format(
+        state_df[["year", "energy_btu", "energy_kwh", "year_over_year_change"]].style.format(
             {
-                "energy_consumption": "{:,.0f}",
-                "energy_production": "{:,.0f}",
-                "solar_capacity_added": "{:,.0f}",
-                "co2_emissions": "{:,.0f}",
-                "air_quality_index": "{:.0f}",
-                "clean_ratio": "{:.3f}",
-                "emissions_intensity": "{:.3f}",
-                "solar_growth_rate": "{:.1%}",
+                "energy_btu": "{:,.0f}",
+                "energy_kwh": "{:,.0f}",
+                "year_over_year_change": "{:.1%}",
             }
         ),
         use_container_width=True,
