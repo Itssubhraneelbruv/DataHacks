@@ -19,30 +19,6 @@ permit_count_chart_path = APP_DIR / "assets" / "top_cities_by_permit_count.png"
 avg_system_chart_path = APP_DIR / "assets" / "top_cities_by_avg_system_size_per_permit.png"
 adoption_time_chart_path = APP_DIR / "assets" / "solar_permit_adoption_over_time.png"
 
-st.subheader("Tiny towns, huge systems. Big cities, everyday rooftops.")
-st.write(
-    "The cities with the highest average system size, such as Point Reyes at 741 kW "
-    "and Detour at 630 kW, are tiny towns most people have not heard of. The cities "
-    "with the most permits, such as Oakland with 3,455 permits and Hanford with 1,776, "
-    "have much smaller average systems around 7-10 kW."
-)
-
-st.subheader("What this means for regular people")
-st.write(
-    "Small rural towns are installing massive solar systems, likely farms, ranches, "
-    "or commercial properties that need huge energy capacity. Meanwhile, big cities "
-    "like Oakland and San Diego have thousands of regular homeowners installing modest "
-    "rooftop panels."
-)
-
-st.write("So there are actually two completely different types of solar buyers in this data:")
-st.markdown(
-    "- **The big installer:** one farm in Point Reyes putting in a 741 kW system.\n"
-    "- **The everyday homeowner:** thousands of Oakland residents each putting in a 7-10 kW rooftop panel."
-)
-
-st.divider()
-
 st.subheader("Where individual solar buying is happening at scale")
 st.image(permit_count_chart_path, use_container_width=True)
 st.write(
