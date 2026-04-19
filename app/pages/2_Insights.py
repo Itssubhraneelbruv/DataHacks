@@ -67,7 +67,7 @@ st.write(
     "700 permits per month and reached over 1,600 by year-end."
 )
 st.write(
-    "March 2026 stands out as the major anomaly, peaking at 4,734 permits. That sudden jump could "
+    "March 2026 stands out as the major anomaly, peaking at 4,592 permits. That sudden jump could "
     "reflect a policy deadline, a rush to file before incentives changed, a large data batch upload, "
     "or a genuine surge in demand. As of mid-April 2026, the month has recorded 1,151 permits — "
     "still well above the historical baseline, though April is not yet complete. Even so, the level "
